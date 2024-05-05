@@ -1,26 +1,106 @@
-#criação do gráfico
-dados <- read.csv("C:/Users/Carlos Augusto Filho/Documents/banco_final.csv")
-library(tidyverse)
-library(ggplot2)
-dados
-
-dados %>%
-  group_by(format) %>%
-  summarise(
-    contagem=n()
-  ) %>%
-  ggplot(aes(x=format, y=contagem, label=contagem)) +
-    geom_bar(stat="identity", fill="Red")+
-    geom_label()
-
-criação do Data Frame
-dados <- read.csv("C:/Users/Carlos Augusto Filho/Documents/banco_final.csv")
-library(gt)
+#Gráfico de linhas
 library(dplyr)
-data = data.frame(
-  Década = c(1969, 1970, 1980, 1990, 2000, 2010, 2020),
-  Séries = c(15, 137, 165, 10, 69, 125, 28),
-  Filmes = c(0, 1, 3, 3, 14, 22, 3),
-  CrossOvers= c(0, 3, 0, 1, 1, 3, 0),
-  Total = c(15, 141, 168, 14, 84, 150, 31)
+library(tidyr)
+library(ggplot2)
+
+estat_colors <- c(
+  "#A11D21", "#003366", "#CC9900",
+  "#663333", "#FF6600", "#CC9966",
+  "#999966", "#006606", "#008091", 
+  "#041835", "#666666" 
 )
+
+theme_estat <- function(...) {
+  theme <- ggplot2::theme_bw() +
+    ggplot2::theme(
+      axis.title.y = ggplot2::element_text(colour = "black", size = 12),
+      axis.title.x = ggplot2::element_text(colour = "black", size = 12),
+      axis.text = ggplot2::element_text(colour = "black", size = 9.5),
+      panel.border = ggplot2::element_blank(),
+      axis.line = ggplot2::element_line(colour = "black"),
+      legend.position = "top",
+      ...
+    )
+  
+  return(
+    list(
+      theme,
+      scale_fill_manual(values = estat_colors),
+      scale_colour_manual(values = estat_colors)
+    )
+  )
+}
+
+dados <- data.frame(
+  Década = c(1990, 1969, 2020, 2000, 2010, 1970, 1980),
+  Séries = c(10, 15, 28, 69, 125, 137, 165),
+  Filmes = c(3, 0, 3, 14, 22, 1, 3),
+  CrossOvers = c(1, 0, 0, 1, 3, 3, 0),
+  Total = c(14, 15, 31, 84, 150, 141, 168)
+)
+
+dados_porcentagem <- dados %>%
+  mutate(
+    Porcentagem_Séries = Séries / Total * 100,
+    Porcentagem_Filmes = Filmes / Total * 100,
+    Porcentagem_CrossOvers = CrossOvers / Total * 100
+  )
+
+dados_longos <- dados_porcentagem %>%
+  pivot_longer(cols = starts_with("Porcentagem"), names_to = "Tipo", values_to = "Porcentagem")
+
+ggplot(dados_longos, aes(x = factor(Década), y = Porcentagem, fill = Tipo)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Distribuição das Obras do Scooby-Doo por Década (em %)",
+       x = "Década",
+       y = "Porcentagem",
+       fill = "Tipo de Obra") +
+  theme_estat() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
+  geom_text(aes(label = paste0(round(Porcentagem), "%")), position = position_dodge(width = 0.9), vjust = -0.5, size = 3)
+
+
+
+
+
+# Box Plot
+library(dplyr)
+library(ggplot2)
+estat_colors <- c(
+  "#A11D21", "#003366", "#CC9900",
+  "#663333", "#FF6600", "#CC9966",
+  "#999966", "#006606", "#008091", 
+  "#041835", "#666666" 
+)
+theme_estat <- function(...) {
+  theme <- ggplot2::theme_bw() +
+    ggplot2::theme(
+      axis.title.y = ggplot2::element_text(colour = "black", size = 12),
+      axis.title.x = ggplot2::element_text(colour = "black", size = 12),
+      axis.text = ggplot2::element_text(colour = "black", size = 9.5),
+      panel.border = ggplot2::element_blank(),
+      axis.line = ggplot2::element_line(colour = "black"),
+      legend.position = "top",
+      ...
+    )
+  
+  return(
+    list(
+      theme
+    )
+  )
+}
+
+dados <- read.csv("https://drive.google.com/uc?id=1nueO9xLjg7AWGsXsf69MRflEQuEswoOA")
+
+ordem_temporadas <- c("movie", "crossover", "special", 
+                      unique(dados$season[dados$season != "movie" & dados$season != "crossover" & dados$season != "special"]))
+
+dados$season <- factor(dados$season, levels = ordem_temporadas)
+ggplot(dados, aes(x = season, y = imdb)) +
+  geom_boxplot(fill = "#A11D21", width = 0.5) +
+  stat_summary(fun = "mean", geom = "point", shape = 23, size = 3, fill = "white") +
+  labs(x = "Temporada", y = "Nota IMDB") +
+  theme_estat()
+ggsave("box_bi.pdf", width = 158, height = 93, units = "mm")
